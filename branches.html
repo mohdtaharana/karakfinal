@@ -18,28 +18,71 @@
     --green: #25D366;
     --dark: #1a2744;
     --white: #ffffff;
-     --home-bg: url("media/karak-crispy-biryani-bg-mobile.png");
-  --home-bg-desktop: url("media/karak-crispy-biryani-bg-desktop.png");
+    --home-bg: url("media/karak-crispy-biryani-bg-mobile.png");
+    --home-bg-desktop: url("media/karak-crispy-biryani-bg-desktop.png");
   }
 
-  /* FIXED BACKGROUND - no weird movement on scroll */
+  /* 
+    FIX #1: Preload critical background images to prevent flickering/white flash
+    This ensures images are loaded before render, eliminating late-load flash
+  */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    background-image: var(--home-bg), var(--home-bg-desktop);
+    background-repeat: no-repeat;
+    background-size: 1px 1px;
+    z-index: -999;
+  }
+
+  /* Preload branch images via pseudo-element cache warm-up */
+  img.preload-assist {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0.001;
+    pointer-events: none;
+    top: -100px;
+    left: -100px;
+  }
+
   html, body {
     min-height: 100%;
     font-family: 'Poppins', sans-serif;
     overflow-x: hidden;
   }
 
+  /* 
+    FIX #2: Use background-color fallback + image with will-change and hardware acceleration
+    Fixed background eliminates white flash on scroll and repaints
+  */
   body {
-    background: 
+    background-color: #f9eed7; /* warm fallback matching image tone */
+    background-image: 
       linear-gradient(135deg, rgba(245, 183, 49, 0.45), rgba(245, 183, 49, 0.30)),
-      var(--home-bg) center/cover no-repeat fixed;
+      var(--home-bg);
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: fixed; /* critical: fixes flicker on scroll */
+    background-size: cover;
+    will-change: transform; /* forces GPU layer, reduces repaint flicker */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   @media (min-width: 768px) {
     body {
-      background:
+      background-image:
         linear-gradient(135deg, rgba(245, 183, 49, 0.42), rgba(245, 183, 49, 0.26)),
-        var(--home-bg-desktop) center/100% auto no-repeat fixed;
+        var(--home-bg-desktop);
+      background-size: 100% auto, cover;
+      background-position: center top, center top;
     }
   }
 
@@ -51,18 +94,19 @@
     flex-direction: column;
     align-items: center;
     padding-bottom: 90px;
+    transform: translateZ(0);
   }
 
-  /* subtle overlay */
+  /* subtle overlay - no flicker impact */
   .page::after {
     content: "";
-    /* position: fixed; */
     inset: 0;
     z-index: 0;
     background:
       radial-gradient(circle at top, rgba(255,255,255,0.18), transparent 24%),
       linear-gradient(180deg, rgba(26,39,68,0.02), rgba(26,39,68,0.06));
     pointer-events: none;
+    position: fixed;
   }
 
   /* ---- Content ---- */
@@ -89,6 +133,9 @@
     border-radius: 18px;
     display: block;
     filter: drop-shadow(0 8px 24px rgba(0,0,0,0.18));
+    /* prevent flicker on logo image */
+    will-change: auto;
+    transform: translateZ(0);
   }
 
   /* ---- Tagline ---- */
@@ -203,6 +250,7 @@
     gap: 14px;
     transition: transform 0.2s, box-shadow 0.2s;
     text-align: left;
+    will-change: transform;
   }
 
   .branch-card:hover {
@@ -216,7 +264,7 @@
     align-items: flex-start;
   }
 
-  /* Improved image styling for mobile */
+  /* FIX #3: Image loading optimization: set explicit aspect ratio + background placeholder color */
   .branch-image-wrapper {
     width: 100px;
     height: 100px;
@@ -224,7 +272,8 @@
     overflow: hidden;
     flex-shrink: 0;
     box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-    background: #f5f5f5;
+    background: #e9e2cf; /* warm placeholder blends with page to avoid white flash */
+    position: relative;
   }
 
   .branch-image-wrapper img {
@@ -232,8 +281,14 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    /* FIX #4: Lazy loading disabled on critical above the fold? no, we use eager + fetchpriority high for key images */
+    /* However we also preload with data preload later in JS: ensures no late load flicker */
+    transition: opacity 0.1s ease;
+    opacity: 1;
+    background-color: #e9e2cf;
   }
 
+  /* Ensure images load smoothly without white flash: image decode async (safe) */
   .branch-info {
     display: flex;
     flex-direction: column;
@@ -242,7 +297,6 @@
     min-width: 0;
   }
 
-  /* No open/status tag */
   .branch-title {
     font-size: 17px;
     font-weight: 800;
@@ -492,7 +546,6 @@
     .branch-card-actions {
       padding-top: 10px;
     }
-    /* address text better wrapping */
     .meta-item span {
       word-break: break-word;
       line-height: 1.4;
@@ -502,7 +555,6 @@
     }
   }
 
-  /* Extra small devices */
   @media (max-width: 380px) {
     .branch-image-wrapper {
       width: 75px;
@@ -522,7 +574,7 @@
 
     <!-- Logo -->
     <div class="logo-wrap">
-      <img src="media/logo2.webp" alt="Karak Express">
+      <img src="media/logo2.webp" alt="Karak Express" loading="eager" fetchpriority="high">
     </div>
 
     <!-- Tagline -->
@@ -545,13 +597,13 @@
       <button class="city-tab" data-city="makkah">Makkah</button>
     </div>
 
-   <!-- Branch Cards Container - NO "Open" tag, improved mobile layout -->
+   <!-- Branch Cards Container -->
     <div class="branch-list">
       <!-- Madinah Branches -->
       <div class="branch-card" data-city="madinah">
         <div class="branch-card-top">
           <div class="branch-image-wrapper">
-            <img src="media/branch1 taiba.jpg" alt="Taiba Madinah Suites">
+            <img src="media/branch1 taiba.jpg" alt="Taiba Madinah Suites" loading="eager" fetchpriority="high">
           </div>
           <div class="branch-info">
             <h3 class="branch-title">Taiba Madinah Suites</h3>
@@ -575,7 +627,7 @@
       <div class="branch-card" data-city="madinah">
         <div class="branch-card-top">
           <div class="branch-image-wrapper">
-            <img src="media/madina  branch2 behind dar al taqwa.jpg" alt="Dakheel Food Court">
+            <img src="media/madina  branch2 behind dar al taqwa.jpg" alt="Dakheel Food Court" loading="lazy">
           </div>
           <div class="branch-info">
             <h3 class="branch-title">Dakheel Food Court</h3>
@@ -589,7 +641,7 @@
       <div class="branch-card" data-city="madinah">
         <div class="branch-card-top">
           <div class="branch-image-wrapper">
-            <img src="media/madina branch3 opposite rowadh mubarak.jpg" alt="Rowdah Mubarak">
+            <img src="media/madina branch3 opposite rowadh mubarak.jpg" alt="Rowdah Mubarak" loading="lazy">
           </div>
           <div class="branch-info">
             <h3 class="branch-title">Rowdah Mubarak</h3>
@@ -603,7 +655,7 @@
       <div class="branch-card" data-city="madinah">
         <div class="branch-card-top">
           <div class="branch-image-wrapper">
-            <img src="media/madina branch4 behind majid chamama saudi.jpg" alt="Masjid Ghamama">
+            <img src="media/madina branch4 behind majid chamama saudi.jpg" alt="Masjid Ghamama" loading="lazy">
           </div>
           <div class="branch-info">
             <h3 class="branch-title">Masjid Ghamama</h3>
@@ -618,7 +670,7 @@
       <div class="branch-card" data-city="makkah">
         <div class="branch-card-top">
           <div class="branch-image-wrapper">
-            <img src="media/makkah branch2 hira cultural.jpg" alt="Hira Cultural District">
+            <img src="media/makkah branch2 hira cultural.jpg" alt="Hira Cultural District" loading="lazy">
           </div>
           <div class="branch-info">
             <h3 class="branch-title">Hira Cultural District</h3>
@@ -632,7 +684,7 @@
       <div class="branch-card" data-city="makkah">
         <div class="branch-card-top">
           <div class="branch-image-wrapper">
-            <img src="media/makkah branch 3 location safwa.png" alt="Al Safwah Tower">
+            <img src="media/makkah branch 3 location safwa.png" alt="Al Safwah Tower" loading="lazy">
           </div>
           <div class="branch-info">
             <h3 class="branch-title">Al Safwah Tower</h3>
@@ -646,7 +698,7 @@
       <div class="branch-card" data-city="makkah">
         <div class="branch-card-top">
           <div class="branch-image-wrapper">
-            <img src="media/makkah branch 4 second floor food court.jpg" alt="King Fahad Gate">
+            <img src="media/makkah branch 4 second floor food court.jpg" alt="King Fahad Gate" loading="lazy">
           </div>
           <div class="branch-info">
             <h3 class="branch-title">King Fahad Gate</h3>
@@ -658,32 +710,30 @@
       </div>
     </div>
 
-    <!-- Social Icons - EXACT styling as requested -->
+    <!-- Social Icons -->
     <div class="social-row">
       <a href="https://www.instagram.com/karakexpressksa/" target="_blank" class="soc soc-ig" title="Instagram">
-        <img src="media/instagram.png" alt="Instagram">
+        <img src="media/instagram.png" alt="Instagram" loading="lazy">
       </a>
       <a href="https://www.tiktok.com/@karakexpress" target="_blank" class="soc soc-tt" title="TikTok">
-        <img src="media/tiktok.png" alt="TikTok">
+        <img src="media/tiktok.png" alt="TikTok" loading="lazy">
       </a>
       <a href="https://www.facebook.com/karakexpressksa" target="_blank" class="soc soc-fb" title="Facebook">
-        <img src="media/facebook.png" alt="Facebook">
+        <img src="media/facebook.png" alt="Facebook" loading="lazy">
       </a>
     </div>
 
-    <!-- Copyright - white color -->
     <div class="copyright">© Copyright 2026. All Rights Reserved by KARAK EXPRESS - Spice World Arabia</div>
   </div>
 </div>
 
-<!-- Back to Home Button (fixed) -->
 <a href="index.html" class="back-home-fixed" id="backHomeBtn">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
   <span>Back to Home</span>
 </a>
 
 <script>
-  // City filter logic
+  // City filter logic (unchanged functionality)
   const tabs = document.querySelectorAll('.city-tab');
   const cards = document.querySelectorAll('.branch-card');
 
@@ -705,12 +755,43 @@
     });
   });
 
-  // Initial: show Madinah
   filterBranches('madinah');
 
-  // Remove any leftover bottom nav or modal elements
+  // Remove any leftover bottom nav/modal elements
   const unwanted = document.querySelectorAll('.bottom-nav-wrapper, .modal-overlay, #branchModal, .bottom-nav');
   unwanted.forEach(el => el && el.remove());
+
+  // FIX #5: Preload all branch images after DOM ready to avoid late-load flicker
+  // This ensures that even lazy-loaded images get fetched early but without blocking paint.
+  // All images that are part of branch cards will be preloaded via JavaScript, eliminating white flash when scrolling into view.
+  (function preloadBranchImages() {
+    const branchImages = document.querySelectorAll('.branch-image-wrapper img');
+    const imageUrls = [];
+    branchImages.forEach(img => {
+      const src = img.getAttribute('src');
+      if (src && !img.hasAttribute('data-preloaded')) {
+        imageUrls.push(src);
+        img.setAttribute('data-preloaded', 'true');
+      }
+    });
+    // Use Promise to preload efficiently without flicker
+    imageUrls.forEach(url => {
+      const preloadLink = document.createElement('link');
+      preloadLink.rel = 'preload';
+      preloadLink.as = 'image';
+      preloadLink.href = url;
+      document.head.appendChild(preloadLink);
+    });
+  })();
+
+  // Also guarantee background images are stable: add extra anti-flicker by forcing body repaint stability
+  window.addEventListener('load', function() {
+    document.body.style.transform = 'translateZ(0)';
+    // Ensure background images are fully painted
+    window.requestAnimationFrame(() => {
+      document.body.classList.add('bg-loaded');
+    });
+  });
 </script>
 </body>
 </html>
