@@ -2,24 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Karak Express</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-<link rel="preload" as="image" href="media/karak-crispy-biryani-bg-mobile.png">
-<link rel="preload" as="image" href="media/karak-crispy-biryani-bg-desktop.png">
-
-<title>Karak Express - Our Branches</title>
+<title>Karak Express</title>
+<link rel="preload" href="media/karak-crispy-biryani-bg-mobile.png" as="image" media="(max-width: 767px)">
+<link rel="preload" href="media/karak-crispy-biryani-bg-desktop.png" as="image" media="(min-width: 768px)">
+<link rel="preload" href="media/logo2.webp" as="image">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-
-<style>
-/* CSS */
-</style>
-</head>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -29,16 +18,41 @@
   --green: #25D366;
   --dark: #1a2744;
   --white: #ffffff;
-   --home-bg: url("media/karak-crispy-biryani-bg-mobile.png");
+  --home-bg: url("media/karak-crispy-biryani-bg-mobile.png");
   --home-bg-desktop: url("media/karak-crispy-biryani-bg-desktop.png");
 }
 
 html, body {
   min-height: 100%;
   font-family: 'Poppins', sans-serif;
- background:
-linear-gradient(135deg, rgba(245, 183, 49, 0.45), rgba(245, 183, 49, 0.30)),
-var(--home-bg) center/cover no-repeat;
+  overflow-x: hidden;
+}
+
+/* FIXED BACKGROUND LAYER - Guarantees absolutely zero movement on mobile scroll */
+.bg-fixed-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background-color: #f5b731; 
+  background-image: 
+    linear-gradient(135deg, rgba(245, 183, 49, 0.45), rgba(245, 183, 49, 0.30)),
+    var(--home-bg);
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: saturate(1.05) contrast(1.03);
+}
+
+@media (min-width: 768px) {
+  .bg-fixed-layer {
+    background-image:
+      linear-gradient(135deg, rgba(245, 183, 49, 0.42), rgba(245, 183, 49, 0.26)),
+      var(--home-bg-desktop);
+    background-size: 100% auto;
+  }
 }
 
 .page {
@@ -51,19 +65,7 @@ var(--home-bg) center/cover no-repeat;
   padding-bottom: 40px;
 }
 
-.page::before {
-  content: "";
-  /* position: fixed; */
-  inset: 0;
-  z-index: 0;
-  background:
-    linear-gradient(135deg, rgba(245, 183, 49, 0.45), rgba(245, 183, 49, 0.30)),
-    var(--home-bg) center/cover no-repeat;
-  background-attachment: fixed;
-  filter: saturate(1.05) contrast(1.03);
-  pointer-events: none;
-}
-
+/* Dynamic radial gradient overlay */
 .page::after {
   content: "";
   position: fixed;
@@ -92,22 +94,18 @@ var(--home-bg) center/cover no-repeat;
 }
 
 .food-tl {
-  position: absolute;
   top: 0; left: -20px;
   width: clamp(120px, 22vw, 260px);
 }
 .food-tr {
-  position: absolute;
   top: 0; right: -10px;
   width: clamp(110px, 20vw, 240px);
 }
 .food-bl {
-  position: absolute;
   bottom: 60px; left: -10px;
   width: clamp(110px, 18vw, 220px);
 }
 .food-br {
-  position: absolute;
   bottom: 50px; right: -8px;
   width: clamp(110px, 18vw, 220px);
 }
@@ -115,7 +113,7 @@ var(--home-bg) center/cover no-repeat;
 /* ---- Content ---- */
 .content {
   position: relative;
-  z-index: 1;
+  z-index: 2; /* Brought above fixed food items overlay just in case */
   width: 100%;
   max-width: 480px;
   padding: clamp(32px, 8vw, 60px) clamp(24px, 6vw, 48px) clamp(24px, 6vw, 40px);
@@ -217,7 +215,7 @@ var(--home-bg) center/cover no-repeat;
   flex-shrink: 0;
 }
 .btn-label { flex: 1; text-align: left; }
-.btn-arrow { font-size: clamp(16px, 3vw, 20px); font-weight: 700; }
+.btn-arrow { font-size: clamp(16px, 3vw, 20px); font-weight: 700; display: flex; align-items: center; }
 
 /* Green */
 .btn-whatsapp { background: var(--green); color: #fff; }
@@ -273,19 +271,6 @@ var(--home-bg) center/cover no-repeat;
 
 /* ---- Tablet / Desktop ---- */
 @media (min-width: 768px) {
-  html, body {
-    background:
-      linear-gradient(135deg, rgba(245, 183, 49, 0.42), rgba(245, 183, 49, 0.26)),
-      var(--home-bg-desktop) center/100% auto no-repeat fixed;
-  }
-
-  .page::before {
-    background:
-      linear-gradient(135deg, rgba(245, 183, 49, 0.42), rgba(245, 183, 49, 0.26)),
-      var(--home-bg-desktop) center/100% auto no-repeat;
-    background-attachment: fixed;
-  }
-
   .content {
     max-width: 560px;
     gap: 28px;
@@ -307,17 +292,24 @@ var(--home-bg) center/cover no-repeat;
 </style>
 </head>
 <body>
+
+<div class="bg-fixed-layer"></div>
+
 <div class="page">
 
-  <!-- Main Content -->
+  <div class="food-bg">
+    <img src="media/food-tl.png" alt="" class="food-tl">
+    <img src="media/food-tr.png" alt="" class="food-tr">
+    <img src="media/food-bl.png" alt="" class="food-bl">
+    <img src="media/food-br.png" alt="" class="food-br">
+  </div>
+
   <div class="content">
 
-    <!-- Logo -->
     <div class="logo-wrap">
-      <img src="media/logo2.webp" alt="Karak Express">
+      <img src="media/logo2.webp" alt="Karak Express" fetchpriority="high">
     </div>
 
-    <!-- Tagline -->
     <div class="tagline">
       <div class="tagline-inner">
         <div class="spark">
@@ -331,7 +323,6 @@ var(--home-bg) center/cover no-repeat;
       </svg>
     </div>
 
-    <!-- Buttons -->
     <div class="btn-list">
 
       <a href="https://wa.me/966552591157" target="_blank" class="btn btn-whatsapp">
@@ -369,7 +360,6 @@ var(--home-bg) center/cover no-repeat;
 
     </div>
 
-    <!-- Social -->
     <div class="social-row">
       <a href="https://www.instagram.com/karakexpressksa/" target="_blank" class="soc soc-ig" title="Instagram">
         <img src="media/instagram.png" alt="Instagram">
